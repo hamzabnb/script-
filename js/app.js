@@ -422,7 +422,7 @@ function extractNumberFromVariantString(variantString) {
     }
 }
 
-const addToCard = (variantID) => {
+const yesaddToBag = (variantID) => {
     console.log(variantID);
     // only copy the variant id and add to cart
     
@@ -485,13 +485,9 @@ const mapResponseData = (data) => {
 
     addToCard.addEventListener("click", () => {
 
-        // add to cart
-        console.log("Add to cart");
-        console.log(data.variantID);
         const variationNo = extractNumberFromVariantString(data.variantID);
         console.log(variationNo);
-        // only copy the variant id and add to cart
-        addToCard(variationNo);
+        addToBag(variationNo);
     })
 
     // catd
