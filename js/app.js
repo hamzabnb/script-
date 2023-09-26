@@ -136,8 +136,6 @@ const suggestionBox = function () {
 
 // chat Context 
 const chatContext = function () {
-    // const chatUrl = "https://jsonplaceholder.typicode.com/posts";
-//  const chatUrl = "https://shopify-gpt-git-main-khairali.vercel.app/api/client"
     const chatUrl = "https://us-central1-smartassistantproject-770b6.cloudfunctions.net/api/client/load-context"
     let data = {};
 
@@ -321,7 +319,7 @@ const mapQuestion = (question) => {
     li.style.fontWeight = "500";
     li.style.color = "#808080";
     
-    li.innerHTML = question.question;
+    li.innerHTML = question;
     list.appendChild(li);
 };
 
@@ -331,10 +329,21 @@ const mapAllQuestion = (question) => {
     const chatBox = document.getElementById("main-chat-box-55");
     chatBox.style.display = "block";
     
-    const list = document.getElementById("main-response");
-    list.innerHTML = "";
-    question.forEach((question) => mapQuestion(question));
-};
+    const li = document.createElement("li");
+    // style
+    li.style.listStyle = "none";
+    li.style.marginBottom = "10px";
+    li.style.fontSize = "12px";
+    li.style.fontWeight = "500";
+    li.style.color = "#808080";
+    
+    li.innerHTML = question;
+    chatBox.appendChild(li);
+    // const list = document.getElementById("main-response");
+    // list.innerHTML = "";
+    // question.forEach((question) => mapQuestion(question));
+}
+;
 
 // post question to the server and get the response back
 const url = "https://us-central1-smartassistantproject-770b6.cloudfunctions.net/api/client/chat";
@@ -389,6 +398,8 @@ const structureResponse = (data) => {
             image : res.node?.images?.edges[0].node.originalSrc,
             tags : res.node?.tags,
             price : res.node?.variants?.edges[0].node.price,
+            variantID : res.node?.variants?.edges[0].node.id,
+            // also need handle
         }
         arry.push(obj);
     });
@@ -397,12 +408,92 @@ const structureResponse = (data) => {
 
 }
 
+function extractNumberFromVariantString(variantString) {
+    // Use a regular expression to extract the number part
+    const regex = /(\d+)/;
+    const match = variantString.match(regex);
+
+    if (match) {
+        // The first captured group (match[1]) contains the number part
+        return match[1];
+    } else {
+        // Return null or handle the case when no number is found
+        return null;
+    }
+}
+
+const addToCard = (variantID) => {
+    console.log(variantID);
+    // only copy the variant id and add to cart
+    
+    const url = "https://halebob-la-staging.myshopify.com/cart/add.js";
+
+    const body = {
+        variantId : variantID,
+        quantity : 1
+    }
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        credentials: 'same-origin',
+        headers: {
+            "Content-Type": "application/json",
+        }
+    })
+
+        // .then((res) => res.json())
+        .then((res) => {
+            if (!res.ok) {
+                throw Error("Error fetching data!");
+            } else {
+                return res.json();
+            }
+        })
+        .then((data) => {
+            console.log(data);
+        })
+        .catch((err) => {
+            console.log(err);
+        })
+        .finally(() => {
+            // resolve(state);
+        });
+}
+
 const mapResponseData = (data) => {
 
     const list = document.getElementById("main-chat-box-55");
     const li = document.createElement("li");
     li.style.listStyle = "none";
     li.style.marginBottom = "10px";
+    // add to card button 
+    const addToCard = document.createElement("button");
+    addToCard.innerHTML = "Add to Card";
+    addToCard.style.padding = "10px";
+    addToCard.style.border = "none";
+    addToCard.style.borderRadius = "10px";
+    addToCard.style.backgroundColor = "#000";
+    addToCard.style.color = "#FFF";
+    addToCard.style.cursor = "pointer";
+    addToCard.style.marginBottom = "10px";
+    addToCard.style.fontSize = "12px";
+    addToCard.style.fontWeight = "500";
+
+    addToCard.addEventListener("click", () => {
+
+        // add to cart
+        console.log("Add to cart");
+        console.log(data.variantID);
+        const variationNo = extractNumberFromVariantString(data.variantID);
+        console.log(variationNo);
+        // only copy the variant id and add to cart
+        addToCard(variationNo);
+    })
+
     // catd
     const card = document.createElement("div");
     // id to card
@@ -411,11 +502,21 @@ const mapResponseData = (data) => {
     card.style.display = "flex";
     card.style.flexDirection = "column";
     card.style.padding = "10px";
+    // imag wrapper
+    const imageWrapper = document.createElement("div");
+    imageWrapper.setAttribute("id", "image-wrapper");
+    imageWrapper.style.display = "flex";
+    imageWrapper.style.justifyContent = "center";
+    imageWrapper.style.alignItems = "center";
+    imageWrapper.style.marginBottom = "10px";
+    imageWrapper.style.width = "100px";
+    imageWrapper.style.borderRadius = "10px";
     // image
     const image = document.createElement("img");
     image.setAttribute("src", data.image);
-    image.setAttribute("width", "100px");
-    image.setAttribute("height", "100px");
+    image.style.objectFit = "cover";
+    image.style.width = "100px";
+
     // lazy loading
     image.setAttribute("loading", "lazy");
     image.style.borderRadius = "10px";
@@ -438,24 +539,12 @@ const mapResponseData = (data) => {
     price.style.fontWeight = "500";
     price.style.color = "#808080";
 
-    // tags
-    const tags = document.createElement("div");
-    // if tags is empty then show no tags
-    if(data.tags.length === 0) {
-        tags.innerHTML = "";
-    } else {
-        tags.innerHTML = data.tags;
-    }
-    tags.style.marginBottom = "10px";
-    tags.style.fontSize = "12px";
-    tags.style.fontWeight = "500";
-    tags.style.color = "#808080";
-
     // append to card
-    card.appendChild(image);
+    imageWrapper.appendChild(image);
+    card.appendChild(imageWrapper);
     card.appendChild(title);
     card.appendChild(price);
-    card.appendChild(tags);
+    card.appendChild(addToCard);
 
     // append to list
     li.appendChild(card);
@@ -570,10 +659,12 @@ function main() {
 
             storeData.context.data.push(data);
 
-            mapAllQuestion(storeData.question);
+            mapAllQuestion(e.target.value);
             const dataArray = storeData.context.data;
             await callLayer(postQuestion(dataArray));
             inputField.value = "";
+            // remove user question from context
+            storeData.context.data.pop();
             console.log(storeData);
         }
     });
