@@ -399,7 +399,7 @@ const structureResponse = (data) => {
             tags : res.node?.tags,
             price : res.node?.variants?.edges[0].node.price,
             variantID : res.node?.variants?.edges[0].node.id,
-            // also need handle
+            handle : res.node?.handle
         }
         arry.push(obj);
     });
@@ -422,7 +422,7 @@ function extractNumberFromVariantString(variantString) {
     }
 }
 
-const yesaddToBag = (variantID) => {
+const addToBag = (variantID) => {
     console.log(variantID);
     // only copy the variant id and add to cart
     
@@ -491,13 +491,18 @@ const mapResponseData = (data) => {
     })
 
     // catd
-    const card = document.createElement("div");
+    const card = document.createElement("a");
+    // pass href to card 
+    card.setAttribute("href", `https://halebob-la-staging.myshopify.com/products/${data.handle}`);
+    card.setAttribute("target", "_blank");
+
     // id to card
     card.setAttribute("id", "card");
     // style
     card.style.display = "flex";
     card.style.flexDirection = "column";
     card.style.padding = "10px";
+    card.style.textDecoration = "none";
     // imag wrapper
     const imageWrapper = document.createElement("div");
     imageWrapper.setAttribute("id", "image-wrapper");
