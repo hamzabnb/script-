@@ -1,4 +1,4 @@
-console.log("Custom App B&B");
+console.log("Custom App");
 
 // creata global Store to store the state
 const Store = function () {
@@ -104,11 +104,41 @@ const InputField = function () {
     };
 }
 
+// suggestion Box
+const suggestionBox = function () {
+    let suggestionElement;
+    let suggestionCallback;
+
+    function init(content) {
+        suggestionElement = document.createElement("div");
+        suggestionElement.innerHTML = content || "Suggestion Box!";
+        suggestionElement.setAttribute("id", "suggestion-box");
+        let inputField = document.getElementById("chat-box-85");
+        inputField.appendChild(suggestionElement);
+    }
+
+    function onClick(callback) {
+        suggestionCallback = callback;
+        suggestionElement.addEventListener("click", suggestionCallback);
+    }
+
+    function remove() {
+        suggestionElement.removeEventListener("click", suggestionCallback);
+        suggestionElement.remove();
+    }
+
+    return {
+        init,
+        onClick,
+        remove,
+    };
+}
+
 // chat Context 
 const chatContext = function () {
-    // https://c0a8-203-215-174-212.ngrok-free.app/api/chat
-    const chatUrl = "https://jsonplaceholder.typicode.com/posts";
-    // const chatUrl = "https://c0a8-203-215-174-212.ngrok-free.app/api/chat";
+    // const chatUrl = "https://jsonplaceholder.typicode.com/posts";
+//  const chatUrl = "https://shopify-gpt-git-main-khairali.vercel.app/api/client"
+    const chatUrl = "https://us-central1-smartassistantproject-770b6.cloudfunctions.net/api/client/load-context"
     let data = {};
 
     function setData(key, value) {
@@ -246,6 +276,20 @@ const buttonContent = `
     </div>
 `;
 
+const suggestionContainer = `
+    <div 
+        id = "suggestion-box"
+    >
+        <div
+            id = "suggestion-box-title"
+            >
+            Suggestion Box  
+        </div>
+
+    </div>
+`
+
+
 const mapRes = (res) => {
     const list = document.getElementById("main-response");
     const li = document.createElement("li");
@@ -293,8 +337,9 @@ const mapAllQuestion = (question) => {
 };
 
 // post question to the server and get the response back
-const url = "https://jsonplaceholder.typicode.com/posts";
+const url = "https://us-central1-smartassistantproject-770b6.cloudfunctions.net/api/client/chat";
 const postQuestion = (question) => {
+    console.log(question , "post questions");
     let state = {
         loading: true,
         error: false,
@@ -332,29 +377,135 @@ const postQuestion = (question) => {
     });
 };
 
+// chnage structure of the response
+const structureResponse = (data) => {
+    
+    let arry = [];
+    data?.data?.shopify?.data?.products?.edges?.forEach((res) => {
+        // arry.push(res.node);
+        const obj = {
+            id : res.node?.id,
+            title : res.node?.title,
+            image : res.node?.images?.edges[0].node.originalSrc,
+            tags : res.node?.tags,
+            price : res.node?.variants?.edges[0].node.price,
+        }
+        arry.push(obj);
+    });
+   
+    return arry;
+
+}
+
+const mapResponseData = (data) => {
+
+    const list = document.getElementById("main-chat-box-55");
+    const li = document.createElement("li");
+    li.style.listStyle = "none";
+    li.style.marginBottom = "10px";
+    // catd
+    const card = document.createElement("div");
+    // id to card
+    card.setAttribute("id", "card");
+    // style
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.padding = "10px";
+    // image
+    const image = document.createElement("img");
+    image.setAttribute("src", data.image);
+    image.setAttribute("width", "100px");
+    image.setAttribute("height", "100px");
+    // lazy loading
+    image.setAttribute("loading", "lazy");
+    image.style.borderRadius = "10px";
+    image.style.marginBottom = "10px";
+
+    // title
+    const title = document.createElement("div");
+    title.innerHTML = data.title;
+    title.style.marginBottom = "10px";
+    title.style.fontSize = "12px";
+    title.style.fontWeight = "500";
+    title.style.color = "#808080";
+
+    // price
+    const price = document.createElement("div");
+    // price.innerHTML = data.price;
+    price.innerHTML = "$" + data.price;
+    price.style.marginBottom = "10px";
+    price.style.fontSize = "12px";
+    price.style.fontWeight = "500";
+    price.style.color = "#808080";
+
+    // tags
+    const tags = document.createElement("div");
+    // if tags is empty then show no tags
+    if(data.tags.length === 0) {
+        tags.innerHTML = "";
+    } else {
+        tags.innerHTML = data.tags;
+    }
+    tags.style.marginBottom = "10px";
+    tags.style.fontSize = "12px";
+    tags.style.fontWeight = "500";
+    tags.style.color = "#808080";
+
+    // append to card
+    card.appendChild(image);
+    card.appendChild(title);
+    card.appendChild(price);
+    card.appendChild(tags);
+
+    // append to list
+    li.appendChild(card);
+    list.appendChild(li);
+}
+
 const callLayer = async (callback) => {
     // show loader
-    console.log("Loading...");
+    let loader = true
+
+    const list = document.getElementById("main-chat-box-55");
+    const li = document.createElement("li");
+
+    if (loader) {
+        console.log("Loading...");
+        // style
+        li.style.listStyle = "none";
+        li.style.marginBottom = "10px";
+        li.style.fontSize = "12px";
+
+        li.innerHTML = "Loading...";
+        list.appendChild(li);
+    }
 
     // data fetch
     callback
         .then((data) => {
-            console.log(data);
-
+            // console.log(data);
+            // hide loader
+            loader = false;
+            li.innerHTML = "";
+            // structure the response
+            const response = structureResponse(data);
+            console.log(response);
             // show data
-
+            response.forEach((res) => mapResponseData(res));
             // show in pre tag
         })
         .catch((err) => {
             console.log(err);
+            loader = false;
+            li.innerHTML = "error";
             // show error
             console.log("Error");
         });
 };
+    
 
 function main() {
-
-    // create a store
+    // show data variable properly 
     const store = Store();
     const storeData = store.getData();
     console.log(storeData);
@@ -365,15 +516,19 @@ function main() {
 
     // inpu field
     const inputF = InputField();
+    // suggestion box
+    const suggestion = suggestionBox();
+    // suggestion.init();
 
     // chat context
     const chat = chatContext();
-
     // create a button
     const button = TriggetButton();
     button.init(buttonContent);
     inputF.init(input);
     inputF.hide();
+    // suggestions
+    // suggestion.init(suggestionContainer);
     button.onClick(() => {
         console.log("Button clicked!");
         inputF.show()
@@ -400,16 +555,24 @@ function main() {
                 id: Math.random(),
                 question: e.target.value,
             });
-            // push all titles to the list
-            storeData.context.data.forEach((res) => {
-                storeData.question.unshift({
-                    id: Math.random(),
-                    question: res.title,
-                });
-            });
+
+            const data = {
+                role : "user",
+                content : e.target.value
+            }
+            storeData.context.data.map((res) => {
+                if(res._id) {
+                    console.log(res._id , "removed");
+                    // remove from object
+                    delete res._id;
+                }
+            })
+
+            storeData.context.data.push(data);
 
             mapAllQuestion(storeData.question);
-            await callLayer(postQuestion(storeData.question[0]));
+            const dataArray = storeData.context.data;
+            await callLayer(postQuestion(dataArray));
             inputField.value = "";
             console.log(storeData);
         }
